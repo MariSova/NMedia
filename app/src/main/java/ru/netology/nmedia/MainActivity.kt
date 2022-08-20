@@ -1,75 +1,81 @@
 package ru.netology.nmedia
 
-import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import androidx.activity.viewModels
 import ru.netology.nmedia.databinding.ActivityMainBinding
 import ru.netology.nmedia.dto.Post
-
+import ru.netology.nmedia.viewmodel.PostViewModel
+import kotlin.math.floor
 
 class MainActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        val viewModel by viewModels<PostViewModel>()
 
-        val post = Post (
-            id = 1,
-            author = "Нетология. Университет интернет-профессий будущего",
-            content = "Привет, это новая Нетология! Когда-то Нетология начиналась с интенсивов по онлайн-маркетингу. Затем появились курсы по дизайну, разработке, аналитике и управлению. Мы растём сами и помогаем расти студентам: от новичков до уверенных профессионалов. Но самое важное остаётся с нами: мы верим, что в каждом уже есть сила, которая заставляет хотеть больше, целиться выше, бежать быстрее. Наша миссия — помочь встать на путь роста и начать цепочку перемен → http://netolo.gy/fyb",
-            published = "21 мая в 18:36",
-            likeCount = 999,
-            shareCount = 999,
-            likedByMe = false
-        )
-        with(binding) {
-            authorName.text = post.author
-            content.text = post.content
-            date.text = post.published
-            likeCount.text = post.likeCount.toString()
-            repostCount.text = post.shareCount.toString()
+        viewModel.data.observe(this) { post ->
+            binding.render(post)
+        }
 
-            if (post.likedByMe) {
-                like?.setImageResource(R.drawable.ic_like_post_24dp)
-            }
+        binding.like.setOnClickListener {
+            viewModel.onLikeClicked()
+        }
 
-            like?.setOnClickListener {
-                post.likedByMe = !post.likedByMe
-                like.setImageResource(
-                    if (post.likedByMe) R.drawable.ic_like_post_24dp
-                    else R.drawable.ic_liked_24
-                )
+        binding.repost.setOnClickListener{
+            viewModel.onSharedClicked()
+        }
 
-                val counter = post.likeCount + 1
-                if (post.likedByMe) likeCount.text = Format().reductionInNumbers(counter) else likeCount.text =
-                    Format().reductionInNumbers(post.likeCount)
-            }
-
-            repost.setOnClickListener {
-                val counter = post.shareCount++
-                repostCount.text = Format().reductionInNumbers(counter)
-            }
-
+        binding.views.setOnClickListener{
+            viewModel.onViewsClicked()
         }
 
     }
+
+    private fun ActivityMainBinding.render(post: Post){
+        authorName.text = post.author
+        date.text = post.published
+        content.text = post.content
+        likeCount.text = getFormattedNumber(post.like)
+        repostCount.text = getFormattedNumber(post.repost)
+        viewsCount.text = getFormattedNumber(post.view)
+
+        like.setImageResource(
+            if (post.likedByMe) R.drawable.ic_liked_24 else R.drawable.ic_like_post_24dp
+        )
+    }
+
+    private fun getFormattedNumber(number: Int): String {
+        return when (number) {
+            0 -> ""
+            in 1..999 -> String.format(getString(R.string.numberOnes), number.toFloat())
+            in 1_000..1_099 -> String.format(
+                getString(R.string.numberThousands),
+                floor(number.toDouble() / 100) / 10
+            )
+            in 1_100..9_999 -> String.format(
+                getString(R.string.numberThousandsAndHundreds),
+                floor(number.toDouble() / 100) / 10
+            )
+            in 10_000..999_999 -> String.format(
+                getString(R.string.numberThousands),
+                floor(number.toDouble() / 100) / 10
+            )
+            in 1_000_000..1_099_000 -> String.format(
+                getString(R.string.numberMillions),
+                floor(number.toDouble() / 100_000) / 10
+            )
+            in 1_100_000..9_999_999 -> String.format(
+                getString(R.string.numberMillionsAndThousands),
+                floor(number.toDouble() / 100_000) / 10
+            )
+            else -> String.format(
+                getString(R.string.numberMillions),
+                floor(number.toDouble() / 100_000) / 10
+            )
+        }
+    }
 }
-//        binding.render(post)
-//        binding.like.setOnClickListener {
-//            post.likedByMe = !post.likedByMe
-//                binding.like.setImageResource(getLikeIconResId(post.likedByMe))
-//        }
- //   }
-
-//    private fun ActivityMainBinding.render(post: Post) {
-//        authorName.text = post.author
-//        content.text = post.content
-//        date.text = post.published
-//        like.setImageResource(getLikeIconResId(post.likedByMe))
-//    }
-//    @DrawableRes
-//    private fun getLikeIconResId(liked: Boolean) =
-//        if (liked) R.drawable.ic_liked_24 else R.drawable.ic_like_post_24dp
-
-
-
-//}
