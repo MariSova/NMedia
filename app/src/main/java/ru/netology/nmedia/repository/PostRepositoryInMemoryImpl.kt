@@ -5,10 +5,11 @@ import ru.netology.nmedia.dto.Post
 import androidx.lifecycle.LiveData
 
 class PostRepositoryInMemoryImpl : PostRepository {
+    private var nextId = 1L
     override val data = MutableLiveData(
         listOf(
             Post(
-                id = 3,
+                id = nextId++,
                 author = "Нетология. Университет интернет-профессий будущего",
                 content = "Привет, это новая Нетология! Когда-то Нетология начиналась с интенсивов по онлайн-маркетингу. Затем появились курсы по дизайну, разработке, аналитике и управлению. Мы растём сами и помогаем расти студентам: от новичков до уверенных профессионалов. Но самое важное остаётся с нами: мы верим, что в каждом уже есть сила, которая заставляет хотеть больше, целиться выше, бежать быстрее. Наша миссия — помочь встать на путь роста и начать цепочку перемен → http://netolo.gy/fyb",
                 published = "21 мая в 18:36",
@@ -18,7 +19,7 @@ class PostRepositoryInMemoryImpl : PostRepository {
                 likedByMe = false
             ),
             Post(
-                id = 2,
+                id = nextId++,
                 author = "Нетология. Университет интернет-профессий будущего",
                 content = "Когда-то Нетология начиналась с интенсивов по онлайн-маркетингу.",
                 published = "20 мая в 10:00",
@@ -28,7 +29,7 @@ class PostRepositoryInMemoryImpl : PostRepository {
                 likedByMe = false
             ),
             Post(
-                id = 1,
+                id = nextId++,
                 author = "Нетология. Университет интернет-профессий будущего",
                 content = "Затем появились курсы по дизайну, разработке, аналитике и управлению..",
                 published = "19 мая в 9:00",
@@ -61,6 +62,26 @@ class PostRepositoryInMemoryImpl : PostRepository {
                 likedByMe = !it.likedByMe,
                 like = it.like + if (!it.likedByMe) 1 else -1
             )
+        }
+    }
+
+    override fun remove(postId: Long) {
+        data.value = posts.filter { it.id != postId }
+    }
+
+    override fun save(post: Post) {
+        if (post.id == 0L) insert(post) else update(post)
+    }
+
+    private fun insert(post: Post) {
+        data.value = listOf(
+            post.copy(id = ++nextId)
+        ) + posts
+    }
+
+    private fun update(post: Post) {
+        data.value = posts.map {
+            if (it.id == post.id) post else it
         }
     }
 

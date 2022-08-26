@@ -2,6 +2,7 @@ package ru.netology.nmedia.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.annotation.DrawableRes
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -13,36 +14,51 @@ import kotlin.math.floor
 
 
 internal class PostsAdapter(
-    private val onLikeClicked: (Post) -> Unit,
-    private val onSharedClicked: (Post) -> Unit
+    private val interactionListener: PostInteractionListener
 ) : ListAdapter<Post, PostsAdapter.ViewHolder>(DiffCallback) {
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = CardPostBinding.inflate(inflater, parent, false)
 
         return ViewHolder(
             binding,
-            onLikeClicked,
-            onSharedClicked
+            interactionListener
         )
     }
 
     class ViewHolder(
         private val binding: CardPostBinding,
-        onLikeClicked: (Post) -> Unit,
-        onSharedClicked: (Post) -> Unit,
+        listener: PostInteractionListener,
     ) : RecyclerView.ViewHolder(binding.root) {
 
         private lateinit var post: Post
 
+        private val popupMenu by lazy {
+            PopupMenu(itemView.context, binding.menu).apply {
+                inflate(R.menu.options_post)
+                setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        R.id.remove -> {
+                            listener.onButtonRemoveClicked(post)
+                            true
+                        }
+                        R.id.edit -> {
+                            listener.onButtonEditClicked(post)
+                            true
+                        }
+                        else -> false
+                    }
+                }
+            }
+        }
+
         init {
-            binding.like.setOnClickListener { onLikeClicked(post) }
-            binding.repost.setOnClickListener { onSharedClicked(post) }
+            binding.like.setOnClickListener { listener.onButtonLikesClicked(post) }
+            binding.repost.setOnClickListener { listener.onButtonRepostsClicked(post) }
         }
 
         fun bind(post: Post) {
@@ -56,52 +72,47 @@ internal class PostsAdapter(
                 repostCount.text = getFormattedNumber(post.repost)
                 viewsCount.text = getFormattedNumber(post.view)
                 like.setImageResource(getButtonLikesIconResId(post.likedByMe))
+                menu.setOnClickListener { popupMenu.show() }
             }
         }
 
-        @DrawableRes
-        private fun getButtonLikesIconResId(liked: Boolean) =
-            if (liked) R.drawable.ic_liked_24 else R.drawable.ic_like_post_24dp
-
-        private fun getFormattedNumber(number: Int): String {
-            return when (number) {
-                0 -> ""
-                in 1..999 -> String.format("%.0f", number.toFloat())
-                in 1_000..1_099 -> String.format(
-                    "%.0fK", floor(number.toDouble() / 100) / 10
-                )
-                in 1_100..9_999 -> String.format(
-                    "%.1fK",
-                    floor(number.toDouble() / 100) / 10
-                )
-                in 10_000..999_999 -> String.format(
-                    "%.0fK",
-                    floor(number.toDouble() / 100) / 10
-                )
-                in 1_000_000..1_099_000 -> String.format(
-                    "%.0fM",
-                    floor(number.toDouble() / 100_000) / 10
-                )
-                in 1_100_000..9_999_999 -> String.format(
-                    "%.1fM",
-                    floor(number.toDouble() / 100_000) / 10
-                )
-                else -> String.format(
-                    "%.0fM",
-                    floor(number.toDouble() / 100_000) / 10
-                )
-            }
+    @DrawableRes
+    private fun getButtonLikesIconResId(liked: Boolean) =
+        if (liked) R.drawable.ic_liked_24 else R.drawable.ic_like_post_24dp
+    private fun getFormattedNumber(number: Int): String {
+        return when (number) {
+            0 -> ""
+            in 1..999 -> String.format("%.0f", number.toFloat())
+            in 1_000..1_099 -> String.format(
+                "%.0fK", floor(number.toDouble() / 100) / 10
+            )
+            in 1_100..9_999 -> String.format(
+                "%.1fK",
+                floor(number.toDouble() / 100) / 10
+            )
+            in 10_000..999_999 -> String.format(
+                "%.0fK",
+                floor(number.toDouble() / 100) / 10
+            )
+            in 1_000_000..1_099_000 -> String.format(
+                "%.0fM",
+                floor(number.toDouble() / 100_000) / 10
+            )
+            in 1_100_000..9_999_999 -> String.format(
+                "%.1fM",
+                floor(number.toDouble() / 100_000) / 10
+            )
+            else -> String.format(
+                "%.0fM",
+                floor(number.toDouble() / 100_000) / 10
+            )
         }
-
     }
-
-    private object DiffCallback : DiffUtil.ItemCallback<Post>() {
-
-        override fun areItemsTheSame(oldItem: Post, newItem: Post) =
-            oldItem.id == newItem.id
-
-        override fun areContentsTheSame(oldItem: Post, newItem: Post) =
-            oldItem == newItem
-
-    }
+}
+private object DiffCallback : DiffUtil.ItemCallback<Post>() {
+    override fun areItemsTheSame(oldItem: Post, newItem: Post) =
+        oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: Post, newItem: Post) =
+        oldItem == newItem
+}
 }
